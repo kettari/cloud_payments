@@ -4,7 +4,8 @@
  *
  * @property string $publicId
  * @property string $apiSecret
- * @property string $preference
+ * @property string $taxationSystem
+ * @property string $vat
  */
 class cloud_paymentsPayment extends waPayment implements waIPayment
 {
@@ -37,8 +38,10 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
   {
     $order = waOrder::factory($order_data);
 
+    /**
+     * Fields required to be sent to CloudPayments
+     */
     $hidden_fields = [];
-
     $hidden_fields['publicId'] = $this->publicId;
     $hidden_fields['invoiceId'] = sprintf(
       $this->template,
@@ -58,10 +61,12 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       '.',
       ''
     );
-
     $hidden_fields['currency'] = $order->currency;
     $hidden_fields['email'] = $order->getContact()
       ->get('email', 'default');
+    $hidden_fields['accountId'] = $hidden_fields['email'];
+    $hidden_fields['phone'] = $order->getContact()
+      ->get('phone', 'default');
     $hidden_fields['language'] = substr(
       $order->getContact()
         ->getLocale(),
@@ -69,24 +74,30 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       2
     );
 
+    // Enumerate items for the sake of 54-fz
+    $hidden_fields['items'] = [];
+    foreach ($order->items as $good) {
+      $cp_item['label'] = ifset($good['name']);
+      $cp_item['price'] = ifset($good['price']);
+      $cp_item['quantity'] = ifset($good['quantity']);
+      $cp_item['amount'] = ifset($good['total']) - (ifset($good['total_discount']));
+      $cp_item['vat'] = $this->vat;
+      $cp_item['ean13'] = ifset($good['sku']);
+      $hidden_fields['items'] = $cp_item;
+    }
+    $hidden_fields['taxationSystem'] = $this->taxationSystem;
+
+    print_r($hidden_fields);
+    die;
+
+    /**
+     * $transaction_data['order_id'] is mandatory field,
+     *
+     * @see /wa-apps/shop/lib/classes/shopPayment.class.php
+     */
     $transaction_data = [
-      'invoiceId' => $order->id,
+      'order_id' => $order->id,
     ];
-    /*$hidden_fields['preference'] = isset($this->preference) ? $this->preference : '';
-    if (!empty($this->holdMode)) {
-      $hidden_fields['holdMode'] = 1;
-
-      $day = intval($this->expireDate);
-      if ($day < 31 && $day > 0) {
-        $hidden_fields['expireDate'] = date(
-          'Y-m-d H:i:s',
-          strtotime('+'.$day.' day')
-        );
-      } else {
-        $hidden_fields['expireDate'] = date('Y-m-d H:i:s', strtotime('+3 day'));
-      }
-    }*/
-
     $hidden_fields['successUrl'] = $this->getAdapter()
       ->getBackUrl(waAppPayment::URL_SUCCESS, $transaction_data);
     $hidden_fields['failUrl'] = $this->getAdapter()
@@ -102,155 +113,142 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     return $view->fetch($this->path.'/templates/payment.html');
   }
 
-  private function getSign(&$data)
-  {
-    $fields = [
-      'eshopId',
-      'recipientAmount',
-      'recipientCurrency',
-      'user_email',
-      'serviceName',
-      'orderId',
-      'userFields',
-    ];
-
-    $hash = [];
-    foreach ($fields as $field) {
-      $hash[] = !empty($data[$field]) ? $data[$field] : '';
-    }
-    $hash[] = $this->apiSecret;
-    $hash = md5(implode('::', $hash));
-
-    return $hash;
-  }
-
-  private function getEndpointUrl()
-  {
-    return 'https://merchant.intellectmoney.ru/ru/';
-  }
-
+  /**
+   * Этот метод позволяет извлечь из содержимого либо параметров адреса ответа
+   * платежной системы информацию о приложении, которому необходимо передать
+   * обработку, а также параметры, указанные в настройках плагина оплаты в этом
+   * приложении.
+   *
+   * @param array $request
+   * @return \waPayment
+   * @throws \waPaymentException
+   */
   protected function callbackInit($request)
   {
-    if (preg_match($this->pattern, ifset($request['orderId']), $matches)) {
+    if (preg_match($this->pattern, ifset($request['InvoiceId']), $matches)) {
       $this->app_id = $matches[1];
       $this->merchant_id = $matches[2];
       $this->order_id = $matches[3];
+    } else {
+      throw new waPaymentException('Invalid invoice number');
     }
 
     return parent::callbackInit($request);
   }
 
+  /**
+   * В этом методе описывается алгоритм обработки обратных запросов, полученных
+   * от платежной системы. Основное назначение метода — вызвать обработчик
+   * приложения для обработки транзакции:
+   *
+   * $this->execAppCallback($state, $transaction_data)
+   *
+   * В качестве $state нужно указать статус транзакции с помощью одной из
+   * констант системного класса waPayment: CALLBACK_PAYMENT, CALLBACK_REFUND,
+   * CALLBACK_CONFIRMATION, CALLBACK_CAPTURE, CALLBACK_DECLINE,
+   * CALLBACK_CANCEL, CALLBACK_CHARGEBACK
+   *
+   * @see https://developers.webasyst.ru/plugins/payment-plugins/
+   *
+   * @param array $request
+   * @return mixed|void
+   * @throws \waPaymentException
+   */
   protected function callbackHandler($request)
   {
     $request_fields = [
-      'eshopId'           => '',
-      'paymentId'         => 0,
-      'orderId'           => '',
-      'eshopAccount'      => '',
-      'serviceName'       => '',
-      'recipientAmount'   => 0.0,
-      'recipientCurrency' => '', // USD, RUR, EUR, UAH
-      'paymentStatus'     => 0, // 3|5
-      'userName'          => '',
-      'userEmail'         => '',
-      'paymentData'       => '',
-      'secretKey'         => '',
-      'hash'              => '',
+      'TransactionId' => 0,
+      'InvoiceId'     => '',
+      'Description'   => '',
+      'Amount'        => 0.0,
+      'Currency'      => '', // RUB,...
+      'Name'          => '',
+      'Email'         => '',
+      'Data'          => '',
+      'CardFirstSix'  => '',
+      'CardLastFour'  => '',
     ];
     $request = array_merge($request_fields, $request);
 
-    if (empty($request['eshopId']) || ($this->publicId != $request['eshopId'])) {
-      throw new waException('Invalid shop id');
+    if (!$this->checkSignature()) {
+      throw new waPaymentException(
+        'Invalid request signature (possible fraud)'
+      );
     }
-    $hash = $this->getRequestSign($request);
-    if (empty($request['hash']) || empty($hash) ||
-      ($request['hash'] != $hash)
-    ) {
-      throw new waException('Invalid request sign');
-    }
-
 
     $transaction_data = $this->formalizeData($request);
-
-
-    $callback_method = null;
-    switch (ifset($transaction_data['state'])) {
-      case self::STATE_CAPTURED:
-        $callback_method = self::CALLBACK_PAYMENT;
-        break;
-    }
-
-    if ($callback_method) {
-      $transaction_data = $this->saveTransaction($transaction_data, $request);
-      $this->execAppCallback($callback_method, $transaction_data);
-    }
+    $transaction_data = $this->saveTransaction($transaction_data, $request);
+    $this->execAppCallback(self::CALLBACK_PAYMENT, $transaction_data);
   }
 
-  private function getRequestSign($data)
+  /**
+   *  Check signature
+   *
+   * @return bool
+   * @throws \waPaymentException
+   */
+  private function checkSignature()
   {
-    $fields = [
-      'eshopId',
-      'orderId',
-      'serviceName',
-      'eshopAccount',
-      'recipientAmount',
-      'recipientCurrency',
-      'paymentStatus',
-      'userName',
-      'userEmail',
-      'paymentData',
-    ];
-    $hash = [];
-    foreach ($fields as $field) {
-      $hash[] = !empty($data[$field]) ? $data[$field] : '';
-    }
+    // Check API secret is configured properly
     if (empty($this->apiSecret)) {
-      return null;
-    } else {
-      $hash[] = $this->apiSecret;
+      throw new waPaymentException('API secret is not configured');
     }
-    $hash = md5(implode('::', $hash));
 
-    return $hash;
+    // Get received Content-Hmac value and compare with calculated
+    $headers = getallheaders();
+    $hmac = ifset($headers['Content-Hmac']);
+    $signature = base64_encode(
+      hash_hmac(
+        'sha256',
+        file_get_contents('php://input'),
+        $this->apiSecret,
+        true
+      )
+    );
+
+    return $hmac == $signature;
   }
 
+  /**
+   * Converts transaction raw data to formatted data.
+   *
+   * @param array $transaction_raw_data
+   * @return array
+   */
   protected function formalizeData($transaction_raw_data)
   {
     $transaction_data = parent::formalizeData($transaction_raw_data);
 
+    // Payment details
     $fields = [
-      'userName'  => 'Имя Пользователя в Системе IntellectMoney',
-      'userEmail' => 'Email Пользователя в Системе IntellectMoney',
+      'Name'  => 'Имя держателя карты',
+      'Email' => 'E-mail адрес плательщика',
     ];
+    $view_data = [];
     foreach ($fields as $field => $description) {
       if (ifset($transaction_raw_data[$field])) {
         $view_data[] = $description.': '.$transaction_raw_data[$field];
       }
     }
+    $view_data[] = sprintf(
+      'Номер карты: %s****%s',
+      $transaction_raw_data['CardFirstSix'],
+      $transaction_raw_data['CardLastFour']
+    );
 
     $transaction_data = array_merge(
       $transaction_data,
       [
-        'type'        => null,
-        'native_id'   => ifset($transaction_raw_data['paymentId']),
-        'amount'      => ifset($transaction_raw_data['recipientAmount']),
-        'currency_id' => ifset($transaction_raw_data['recipientCurrency']),
+        'type'        => self::OPERATION_AUTH_ONLY,
+        // transaction id assigned by payment gateway
+        'native_id'   => ifset($transaction_raw_data['TransactionId']),
+        'amount'      => ifset($transaction_raw_data['Amount']),
+        'currency_id' => ifset($transaction_raw_data['Currency']),
         'result'      => 1,
         'order_id'    => $this->order_id,
         'view_data'   => implode("\n", $view_data),
       ]
     );
-
-    switch (ifset($transaction_raw_data['paymentStatus'])) {
-      case 3:
-        $transaction_data['state'] = self::STATE_AUTH;
-        $transaction_data['type'] = self::OPERATION_AUTH_ONLY;
-        break;
-      case 5:
-        $transaction_data['state'] = self::STATE_CAPTURED;
-        $transaction_data['type'] = self::OPERATION_CAPTURE;
-        break;
-    }
 
     return $transaction_data;
   }

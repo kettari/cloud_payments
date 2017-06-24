@@ -1,30 +1,25 @@
-<!-- <form id="im-pay-form" action="{$form_url}" method="POST">
-{foreach $hidden_fields as $name => $value}
-    <input type="hidden" name="{$name}" value="{$value|escape}">
-{/foreach}
-    {if $auto_submit}
-        <script type="text/javascript">
-            document.getElementById('im-pay-form').submit();
-        </script>
-    {else}
-        <input type="submit" value="Оплатить заказ на сайте «IntellectMoney»">
-    {/if}
-</form>-->
 <script src="https://widget.cloudpayments.ru/bundles/cloudpayments"></script>
 <script type="text/javascript">
     $(function () {
+
         // Register payment function
         var pay = function () {
 
-            var description = 'Product full of wonders';
-            var amount = 1238;
-            var email = $('#field_email').val();
-            var name = $('#field_name').val();
-            var phone = $('#field_phone').val();
+            // @formatter:off
+            {foreach $hidden_fields as $name => $value}
+                {if 'amount' == $name}
+                    var {$name} = {$value};
+                {else}
+                    var {$name} = '{$value|escape}';
+                {/if}
+            {/foreach}
+            // @formatter:on
 
-            var account_id = 'qweqwe';
-            if (!account_id.trim()) {
-                account_id = email;
+            // CloudPayments does not allow to pay zero amount
+            if (0 == amount) {
+                $('#zeroamounterror').toggle();
+                $('#cp-pay-form').toggle();
+                return;
             }
 
             // 'data' parameter of the CloudPayments request
@@ -52,12 +47,12 @@
 
             // 'charge' parameter of the CloudPayments .charge() request
             var charge = {
-                publicId: '<?php echo $public_id; ?>',
+                publicId: publicId,
                 description: description,
                 amount: amount,
-                currency: '<?php echo $currency; ?>',
-                invoiceId: '<?php echo $invoice_id; ?>',
-                accountId: account_id,
+                currency: currency,
+                invoiceId: invoiceId,
+                accountId: accountId,
                 email: email,
                 requireEmail: true,
                 data: data
@@ -68,22 +63,27 @@
 
             var widget = new cp.CloudPayments();
             widget.charge(charge,
-                '/success.php',
-                '/failure.php'
+                successUrl,
+                failUrl
             );
         };
 
         // Assign handler
+        // @formatter:off
         $('#checkout').click(pay);
+        {if $auto_submit}
+        $('#checkout').click();
+        {/if}
+        // @formatter:on
     });
 </script>
 <form id="cp-pay-form" action="#" method="get">
-    {foreach $hidden_fields as $name => $value}
-    <div><span>name="{$name}"</span>&nbsp;<span>value="{$value|escape}"</span>
-        {/foreach}
-        <div class="wrapper_submit">
-            <input type="button" id="checkout"
-                   value="Открыть окно оплаты1"
-                   class="btn">
-        </div>
+    <div class="wrapper_submit">
+        <input type="button" id="checkout"
+               value="Открыть окно оплаты"
+               class="btn">
+    </div>
 </form>
+<div style="display:none;color:red" id="zeroamounterror">
+    <p>Невозможно оплатить заказ с нулевой суммой.</p>
+</div>
