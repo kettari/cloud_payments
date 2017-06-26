@@ -142,8 +142,8 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     }
     $hidden_fields['taxationSystem'] = $this->taxationSystem;
 
-    /*print_r($order->items);
-    die;*/
+    print_r($order->items);
+    die;
 
     /**
      * $transaction_data['order_id'] is mandatory field,
