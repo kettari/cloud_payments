@@ -274,7 +274,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     }
 
     // Get received Content-Hmac value and compare with calculated
-    $headers = getallheaders();
+    $headers = $this->getAllHeaders();
     $hmac = ifset($headers['Content-Hmac']);
     $signature = base64_encode(
       hash_hmac(
@@ -286,6 +286,29 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     );
 
     return $hmac == $signature;
+  }
+
+  /**
+   * Returns all HTTP headers.
+   *
+   * @see http://php.net/manual/ru/function.getallheaders.php#84262
+   *
+   * @return array
+   */
+  private function getAllHeaders()
+  {
+    $headers = array();
+    foreach ($_SERVER as $name => $value) {
+      if (substr($name, 0, 5) == 'HTTP_') {
+        $headers[str_replace(
+          ' ',
+          '-',
+          ucwords(strtolower(str_replace('_', ' ', substr($name, 5))))
+        )] = $value;
+      }
+    }
+
+    return $headers;
   }
 
   /**
