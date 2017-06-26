@@ -4,6 +4,7 @@
 Домашняя страница: https://github.com/kettari/cloud_payments
 
 ## Установка
+Плагин можно установить с помощью Инсталера со [страницы плагина](https://www.webasyst.ru/store/plugin/payment/cloud_payments/) либо вручную из [репозитория](https://github.com/kettari/cloud_payments).
 
 ### Автоматическая установка
 Автоматическая установка описана в [инструкции](https://support.webasyst.ru/8620/webasyst-store-install-product/) к системе Вебасист.
