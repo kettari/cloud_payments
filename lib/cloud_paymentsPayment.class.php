@@ -38,7 +38,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
    */
   public function allowedCurrency()
   {
-    return [
+    return array(
       'RUB',
       'EUR',
       'USD',
@@ -56,7 +56,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       'CNY',
       'INR',
       'BRL',
-    ];
+    );
   }
 
   /**
@@ -85,7 +85,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     /**
      * Fields required to be sent to CloudPayments
      */
-    $hidden_fields = [];
+    $hidden_fields = array();
     $hidden_fields['publicId'] = $this->publicId;
     $hidden_fields['invoiceId'] = sprintf(
       $this->template,
@@ -129,7 +129,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     }
 
     // Enumerate items for the sake of 54-fz
-    $hidden_fields['items'] = [];
+    $hidden_fields['items'] = array();
     foreach ($order->items as $single_item) {
       $cp_item['label'] = ifset($single_item['name']);
       $cp_item['price'] = ifset($single_item['price']);
@@ -150,9 +150,9 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
      *
      * @see /wa-apps/shop/lib/classes/shopPayment.class.php
      */
-    $transaction_data = [
+    $transaction_data = array(
       'order_id' => $order->id,
-    ];
+    );
     $hidden_fields['successUrl'] = $this->getAdapter()
       ->getBackUrl(waAppPayment::URL_SUCCESS, $transaction_data);
     $hidden_fields['failUrl'] = $this->getAdapter()
@@ -196,7 +196,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
    *
    * $this->execAppCallback($state, $transaction_data)
    *
-   * $state should be one of the following contsants defined in the waPayment:
+   * $state should be one of the following constants defined in the waPayment:
    * CALLBACK_PAYMENT, CALLBACK_REFUND, CALLBACK_CONFIRMATION,
    * CALLBACK_CAPTURE, CALLBACK_DECLINE, CALLBACK_CANCEL, CALLBACK_CHARGEBACK
    *
@@ -221,7 +221,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
    */
   protected function callbackHandler($request)
   {
-    $request_fields = [
+    $request_fields = array(
       'TransactionId' => 0,
       'InvoiceId'     => '',
       'Description'   => '',
@@ -232,7 +232,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       'Data'          => '',
       'CardFirstSix'  => '',
       'CardLastFour'  => '',
-    ];
+    );
     $request = array_merge($request_fields, $request);
 
     // Check signature to avoid any fraud and mistakes
@@ -254,10 +254,10 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
 
     // Send correct response to the CloudPayments server
     header('Content-Type: application/json');
-    echo json_encode(['code' => 0]);
+    echo json_encode(array('code' => 0));
 
     // This plugin generates response without using a template
-    return ['template' => false];
+    return array('template' => false);
   }
 
   /**
@@ -299,11 +299,11 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     $transaction_data = parent::formalizeData($transaction_raw_data);
 
     // Payment details to be showed in the UI of the order
-    $fields = [
+    $fields = array(
       'Name'  => 'Имя держателя карты',
       'Email' => 'E-mail адрес плательщика',
-    ];
-    $view_data = [];
+    );
+    $view_data = array();
     foreach ($fields as $field => $description) {
       if (ifset($transaction_raw_data[$field])) {
         $view_data[] = $description.': '.$transaction_raw_data[$field];
@@ -317,7 +317,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
 
     $transaction_data = array_merge(
       $transaction_data,
-      [
+      array(
         'type'        => self::OPERATION_AUTH_ONLY,
         // transaction id assigned by payment gateway
         'native_id'   => ifset($transaction_raw_data['TransactionId']),
@@ -326,7 +326,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
         'result'      => 1,
         'order_id'    => $this->order_id,
         'view_data'   => implode("\n", $view_data),
-      ]
+      )
     );
 
     return $transaction_data;
