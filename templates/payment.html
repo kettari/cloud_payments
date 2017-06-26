@@ -12,11 +12,11 @@
                 {else}
                     {if $value|is_array}
                         var {$name} = [];
-                        var single_item = [];
+                        var single_item = {};
                         {foreach $value as $php_single_item => $php_item_properties}
-                            single_item = [];
+                            single_item = {};
                             {foreach $php_item_properties as $php_item_property => $php_property_value}
-                                single_item['{$php_item_property}'] = '{$php_property_value|escape}';
+                                single_item.{$php_item_property} = '{$php_property_value|escape}';
                             {/foreach}
                             {$name}.push(single_item);
                         {/foreach}
@@ -62,7 +62,7 @@
             };
 
             // Debug to the console
-            //console.log(charge);
+            console.log(charge);
 
             var widget = new cp.CloudPayments();
             widget.charge(charge,
