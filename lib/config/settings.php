@@ -1,5 +1,18 @@
 <?php
 
+/*
+  Taxation system constants
+
+  See cloud_paymentsPayment class constants:
+
+  const TS_GENERAL = 0;
+  const TS_SIMPLIFIED_INCOME_ONLY = 1;
+  const TS_SIMPLIFIED_INCOME_MINUS_EXPENSE = 2;
+  const TS_IMPUTED_INCOME = 3;
+  const TS_AGRICULTURE = 4;
+  const TS_LICENSE = 5;
+ */
+
 return [
   'publicId'       => [
     'value'        => '',
@@ -7,7 +20,7 @@ return [
     'description'  => 'Идентификатор сайта, находится в ЛК CloudPayments.',
     'control_type' => waHtmlControl::INPUT,
   ],
-  'apiSecret'       => [
+  'apiSecret'      => [
     'value'        => '',
     'title'        => 'API secret',
     'description'  => 'Пароль для API, находится в ЛК CloudPayments.',

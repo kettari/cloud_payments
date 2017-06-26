@@ -10,7 +10,19 @@
                 {if 'amount' == $name}
                     var {$name} = {$value};
                 {else}
-                    var {$name} = '{$value|escape}';
+                    {if $value|is_array}
+                        var {$name} = [];
+                        var single_item = [];
+                        {foreach $value as $php_single_item => $php_item_properties}
+                            single_item = [];
+                            {foreach $php_item_properties as $php_item_property => $php_property_value}
+                                single_item['{$php_item_property}'] = '{$php_property_value|escape}';
+                            {/foreach}
+                            {$name}.push(single_item);
+                        {/foreach}
+                    {else}
+                        var {$name} = '{$value|escape}';
+                    {/if}
                 {/if}
             {/foreach}
             // @formatter:on
@@ -28,17 +40,8 @@
                 phone: phone,
                 cloudPayments: {
                     customerReceipt: {
-                        Items: [
-                            {
-                                label: description,
-                                price: amount,
-                                quantity: 1.00,
-                                amount: amount,
-                                vat: null,
-                                ean13: null
-                            }
-                        ],
-                        taxationSystem: 2,
+                        Items: items,
+                        taxationSystem: taxationSystem,
                         email: email,
                         phone: phone
                     }

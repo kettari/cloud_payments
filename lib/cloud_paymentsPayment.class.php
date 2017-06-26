@@ -1,7 +1,11 @@
 <?php
 
 /**
+ * @name CloudPayments
+ * @description CloudPayments payment plugin
+ * @author Andrey Kornienko <ant@kaula.ru>
  *
+ * Plugin settings parameters must be specified in file lib/config/settings.php
  * @property string $publicId
  * @property string $apiSecret
  * @property string $taxationSystem
@@ -9,30 +13,70 @@
  */
 class cloud_paymentsPayment extends waPayment implements waIPayment
 {
+  // Taxation system types
+  const TS_GENERAL = 0;
+  const TS_SIMPLIFIED_INCOME_ONLY = 1;
+  const TS_SIMPLIFIED_INCOME_MINUS_EXPENSE = 2;
+  const TS_IMPUTED_INCOME = 3;
+  const TS_AGRICULTURE = 4;
+  const TS_LICENSE = 5;
+
   private $order_id;
   private $pattern = '/^(\w[\w\d]+)_([\w\d]+)_(.+)$/';
   private $template = '%s_%s_%s';
 
   /**
-   * Возвращает массив с разрешёнными валютами для платежа.
+   * Returns array of ISO3 codes of enabled currencies (from settings)
+   * supported by payment gateway.
    *
-   * @return string|string[] ISO3 currency code
+   * Note: Russian legal entities should contact CloudPayments if they want
+   * to receive payments in currencies other then RUB.
+   *
+   * @see https://cloudpayments.ru/Docs/Directory#currencies
+   *
+   * @return string[]
    */
   public function allowedCurrency()
   {
-    return ['RUB'];
+    return [
+      'RUB',
+      'EUR',
+      'USD',
+      'GBP',
+      'UAH',
+      'BYN',
+      'KZT',
+      'AZN',
+      'CHF',
+      'CZK',
+      'CAD',
+      'PLN',
+      'SEK',
+      'TRY',
+      'CNY',
+      'INR',
+      'BRL',
+    ];
   }
 
   /**
-   * Этот метод формирует основное содержимое страницы, с помощью которой
-   * покупатель может ввести данные, необходимые для совершения оплаты
-   * (например, реквизиты для выставления банковского счета), либо перейти на
-   * защищенную страницу платежной системы.
+   * Generates payment form HTML code.
    *
-   * @param array $payment_form_data POST form data
-   * @param waOrder $order_data formalized order data
-   * @param bool $auto_submit
-   * @return string HTML payment form
+   * Payment form can be displayed during checkout or on order-viewing page.
+   * Form "action" URL can be that of the payment gateway or of the current
+   * page (empty URL). In the latter case, submitted data are passed again to
+   * this method for processing, if needed; e.g., verification, saving,
+   * forwarding to payment gateway, etc.
+   *
+   * @param array $payment_form_data Array of POST request data received from
+   *   payment form
+   * (if no "action" URL is specified for the form)
+   * @param waOrder $order_data Object containing all available order-related
+   *   information
+   * @param bool $auto_submit Whether payment form data must be automatically
+   *   submitted (useful during checkout)
+   * @return string Payment form HTML
+   * @throws waException
    */
   public function payment($payment_form_data, $order_data, $auto_submit = false)
   {
@@ -74,20 +118,31 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       2
     );
 
+    // Set VAT according to configuration and common sense
+    switch ($this->taxationSystem) {
+      case (self::TS_GENERAL):
+        $vat = $this->vat;
+        break;
+      default:
+        $vat = null;
+        break;
+    }
+
     // Enumerate items for the sake of 54-fz
     $hidden_fields['items'] = [];
-    foreach ($order->items as $good) {
-      $cp_item['label'] = ifset($good['name']);
-      $cp_item['price'] = ifset($good['price']);
-      $cp_item['quantity'] = ifset($good['quantity']);
-      $cp_item['amount'] = ifset($good['total']) - (ifset($good['total_discount']));
-      $cp_item['vat'] = $this->vat;
-      $cp_item['ean13'] = ifset($good['sku']);
-      $hidden_fields['items'] = $cp_item;
+    foreach ($order->items as $single_item) {
+      $cp_item['label'] = ifset($single_item['name']);
+      $cp_item['price'] = ifset($single_item['price']);
+      $cp_item['quantity'] = ifset($single_item['quantity']);
+      $cp_item['amount'] = ifset($single_item['total']) -
+        (ifset($single_item['total_discount']));
+      $cp_item['vat'] = $vat;
+      $cp_item['ean13'] = ifset($single_item['sku']);
+      $hidden_fields['items'][] = $cp_item;
     }
     $hidden_fields['taxationSystem'] = $this->taxationSystem;
 
-    print_r($hidden_fields);
+    print_r($order->items);
     die;
 
     /**
@@ -103,10 +158,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     $hidden_fields['failUrl'] = $this->getAdapter()
       ->getBackUrl(waAppPayment::URL_FAIL, $transaction_data);
 
-    //$hidden_fields['hash'] = $this->getSign($hidden_fields);
-
     $view = wa()->getView();
-    //$view->assign('form_url', $this->getEndpointUrl());
     $view->assign('hidden_fields', $hidden_fields);
     $view->assign('auto_submit', $auto_submit);
 
@@ -114,14 +166,12 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
   }
 
   /**
-   * Этот метод позволяет извлечь из содержимого либо параметров адреса ответа
-   * платежной системы информацию о приложении, которому необходимо передать
-   * обработку, а также параметры, указанные в настройках плагина оплаты в этом
-   * приложении.
+   * Plugin initialization for processing callbacks received from payment
+   * gateway.
    *
-   * @param array $request
-   * @return \waPayment
-   * @throws \waPaymentException
+   * @param array $request Request data array ($_REQUEST)
+   * @return waPayment
+   * @throws waPaymentException
    */
   protected function callbackInit($request)
   {
@@ -137,22 +187,37 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
   }
 
   /**
-   * В этом методе описывается алгоритм обработки обратных запросов, полученных
-   * от платежной системы. Основное назначение метода — вызвать обработчик
-   * приложения для обработки транзакции:
+   * Actual processing of callbacks from payment gateway.
+   *
+   * Plugin settings are already initialized and available (see
+   * callbackInit()).
+   * Request parameters are checked and app's callback handler is called, if
+   * necessary:
    *
    * $this->execAppCallback($state, $transaction_data)
    *
-   * В качестве $state нужно указать статус транзакции с помощью одной из
-   * констант системного класса waPayment: CALLBACK_PAYMENT, CALLBACK_REFUND,
-   * CALLBACK_CONFIRMATION, CALLBACK_CAPTURE, CALLBACK_DECLINE,
-   * CALLBACK_CANCEL, CALLBACK_CHARGEBACK
+   * $state should be one of the following contsants defined in the waPayment:
+   * CALLBACK_PAYMENT, CALLBACK_REFUND, CALLBACK_CONFIRMATION,
+   * CALLBACK_CAPTURE, CALLBACK_DECLINE, CALLBACK_CANCEL, CALLBACK_CHARGEBACK
    *
    * @see https://developers.webasyst.ru/plugins/payment-plugins/
    *
-   * @param array $request
-   * @return mixed|void
-   * @throws \waPaymentException
+   * @throws waPaymentException
+   * @param array $request Request data array ($_REQUEST) received from gateway
+   * @return array Associative array of optional callback processing result
+   *   parameters:
+   *     'redirect' => URL to redirect user upon callback processing
+   *     'template' => path to template to be used for generation of HTML page
+   *   displaying callback processing results; false if direct output is used
+   *   if not specified, default template displaying message 'OK' is used
+   *     'header'   => associative array of HTTP headers ('header name' =>
+   *   'header value') to be sent to user's browser upon callback processing,
+   *   useful for cases when charset and/or content type are different from
+   *   UTF-8 and text/html
+   *
+   *     If a template is used, returned result is accessible in template
+   *   source code via $result variable, and method's parameters via $params
+   *   variable
    */
   protected function callbackHandler($request)
   {
@@ -170,26 +235,40 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     ];
     $request = array_merge($request_fields, $request);
 
+    // Check signature to avoid any fraud and mistakes
     if (!$this->checkSignature()) {
       throw new waPaymentException(
         'Invalid request signature (possible fraud)'
       );
     }
 
+    // Convert request data into acceptable format and save transaction
     $transaction_data = $this->formalizeData($request);
     $transaction_data = $this->saveTransaction($transaction_data, $request);
-    $this->execAppCallback(self::CALLBACK_PAYMENT, $transaction_data);
+    $result = $this->execAppCallback(self::CALLBACK_PAYMENT, $transaction_data);
+    if (!empty($result['error'])) {
+      throw new waPaymentException(
+        'Forbidden (validate error): '.$result['error']
+      );
+    }
+
+    // Send correct response to the CloudPayments server
+    header('Content-Type: application/json');
+    echo json_encode(['code' => 0]);
+
+    // This plugin generates response without using a template
+    return ['template' => false];
   }
 
   /**
-   *  Check signature
+   *  Checks HMAC-encoded signature.
    *
    * @return bool
    * @throws \waPaymentException
    */
   private function checkSignature()
   {
-    // Check API secret is configured properly
+    // Check if API secret is configured properly
     if (empty($this->apiSecret)) {
       throw new waPaymentException('API secret is not configured');
     }
@@ -219,7 +298,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
   {
     $transaction_data = parent::formalizeData($transaction_raw_data);
 
-    // Payment details
+    // Payment details to be showed in the UI of the order
     $fields = [
       'Name'  => 'Имя держателя карты',
       'Email' => 'E-mail адрес плательщика',
