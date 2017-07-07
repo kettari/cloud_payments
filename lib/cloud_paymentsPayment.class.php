@@ -255,7 +255,9 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     }
 
     // Send correct response to the CloudPayments server
-    header('Content-Type: application/json');
+    wa()
+      ->getResponse()
+      ->addHeader('Content-Type', 'application/json', true);
     echo json_encode(array('code' => 0));
 
     // This plugin generates response without using a template
