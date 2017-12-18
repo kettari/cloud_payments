@@ -82,6 +82,9 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
   {
     $order = waOrder::factory($order_data);
 
+    // Change comma to dot. Some merchants reported issue with it
+    $total = (float)str_replace(',', '.', $order->total);
+
     /**
      * Fields required to be sent to CloudPayments
      */
@@ -100,7 +103,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       "UTF-8"
     );
     $hidden_fields['amount'] = number_format(
-      (float)$order->total,
+      $total,
       2,
       '.',
       ''
@@ -133,18 +136,50 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
     // Enumerate items for the sake of 54-fz
     $hidden_fields['items'] = array();
     foreach ($order->items as $single_item) {
+
+      // Change comma to dot. Some merchants reported issue with it
+      $price = (float)str_replace(
+        ',',
+        '.',
+        ifset($single_item['price'], 0)
+      );
+      $quantity = (float)str_replace(
+        ',',
+        '.',
+        ifset($single_item['quantity'], 0)
+      );
+      $total_amount = (float)str_replace(
+        ',',
+        '.',
+        ifset($single_item['total'], 0)
+      );
+      $total_discount = (float)str_replace(
+        ',',
+        '.',
+        ifset($single_item['total_discount'], 0)
+      );
+
       $cp_item['label'] = ifset($single_item['name']);
-      $cp_item['price'] = ifset($single_item['price']);
-      $cp_item['quantity'] = ifset($single_item['quantity']);
-      $cp_item['amount'] = ifset($single_item['total']) -
-        (ifset($single_item['total_discount']));
+      $cp_item['price'] = number_format(
+        $price,
+        2,
+        '.',
+        ''
+      );
+      $cp_item['quantity'] = $quantity;
+      $cp_item['amount'] = number_format(
+        $total_amount - $total_discount,
+        2,
+        '.',
+        ''
+      );
       $cp_item['vat'] = $vat;
       $cp_item['ean13'] = ifset($single_item['sku']);
       $hidden_fields['items'][] = $cp_item;
     }
     $hidden_fields['taxationSystem'] = $this->taxationSystem;
 
-    /*print_r($order->items);
+    /*print_r($hidden_fields);
     die;*/
 
     /**
