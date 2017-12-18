@@ -6,7 +6,7 @@ return array(
   'icon'        => 'img/cloudpayments16.png',
   'logo'        => 'img/cloudpayments.png',
   'vendor'      => '1084205',
-  'version'     => '1.0.6',
+  'version'     => '1.0.8',
   'locale'      => array('ru_RU',),
   'type'        => waPayment::TYPE_ONLINE,
 );
