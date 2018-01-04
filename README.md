@@ -67,6 +67,14 @@
 ## [Неопубликовано]
 Смотрите [проект на Гитхабе](https://github.com/kettari/amber/projects/1).
 
+## [1.0.9] - 2018-01-04
+### Добавлено
+  - [cloud_payments-4](https://github.com/kettari/cloud_payments/issues/4) Опция для выключения отправки чеков по 54-ФЗ
+  - Опция включения режима отладки плагина
+  
+### Исправлено
+  - [cloud_payments-5](https://github.com/kettari/cloud_payments/issues/5) Учитывать стоимость доставки и скидку в чеке
+
 ## [1.0.8] - 2017-12-19
 ### Изменено
   - Версия плагина обновлена до 1.0.8 в /lib/config/plugin.php
