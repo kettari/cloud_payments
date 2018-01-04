@@ -10,6 +10,8 @@
  * @property string $apiSecret
  * @property string $taxationSystem
  * @property string $vat
+ * @property boolean $sendReceipt
+ * @property boolean $debugMode
  */
 class cloud_paymentsPayment extends waPayment implements waIPayment
 {
@@ -84,6 +86,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
 
     // Change comma to dot. Some merchants reported issue with it
     $total = (float)str_replace(',', '.', $order->total);
+    $shipping = (float)str_replace(',', '.', $order->shipping);
 
     /**
      * Fields required to be sent to CloudPayments
@@ -177,10 +180,41 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       $cp_item['ean13'] = ifset($single_item['sku']);
       $hidden_fields['items'][] = $cp_item;
     }
-    $hidden_fields['taxationSystem'] = $this->taxationSystem;
 
-    /*print_r($hidden_fields);
-    die;*/
+    // Shipping
+    if ($shipping > 0) {
+      $cp_item['label'] = $order_data->shipping_name;
+      $cp_item['price'] = number_format(
+        $shipping,
+        2,
+        '.',
+        ''
+      );
+      $cp_item['quantity'] = 1;
+      $cp_item['amount'] = $cp_item['price'];
+      $cp_item['vat'] = $vat;
+      $cp_item['ean13'] = '';
+      $hidden_fields['items'][] = $cp_item;
+    }
+
+    $hidden_fields['taxationSystem'] = $this->taxationSystem;
+    $hidden_fields['sendReceipt'] = $this->sendReceipt ? 'yes' : 'no';
+
+    if ($this->debugMode) {
+      print('<h1>Debug info</h1>');
+
+      print('<h2>Order data</h2>');
+      print('<pre>');
+      print_r($order_data);
+      print('</pre>');
+
+      print('<h2>CloudPayments form data</h2>');
+      print('<pre>');
+      print_r($hidden_fields);
+      print('</pre>');
+
+      die;
+    }
 
     /**
      * $transaction_data['order_id'] is mandatory field,

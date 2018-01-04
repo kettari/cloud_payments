@@ -28,7 +28,7 @@
             // @formatter:on
 
             // CloudPayments does not allow to pay zero amount
-            if (0 == amount) {
+            if (0 === amount) {
                 $('#zeroamounterror').toggle();
                 $('#cp-pay-form').toggle();
                 return;
@@ -39,14 +39,17 @@
                 name: name,
                 phone: phone,
                 cloudPayments: {
-                    customerReceipt: {
-                        Items: items,
-                        taxationSystem: taxationSystem,
-                        email: email,
-                        phone: phone
-                    }
                 }
             };
+            // Check if fiscal receipt is expected to be sent
+            if ((typeof sendReceipt !== 'undefined') && (sendReceipt === 'yes')) {
+                data.cloudPayments.customerReceipt = {
+                    Items: items,
+                    taxationSystem: taxationSystem,
+                    email: email,
+                    phone: phone
+              };
+            }
 
             // 'charge' parameter of the CloudPayments .charge() request
             var charge = {
@@ -62,7 +65,9 @@
             };
 
             // Debug to the console
-            //console.log(charge);
+            /*if (console) {
+              console.log(charge);
+            }*/
 
             var widget = new cp.CloudPayments();
             widget.charge(charge,
