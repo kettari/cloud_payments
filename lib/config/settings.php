@@ -90,4 +90,16 @@ return array(
       ),
     ),
   ),
+  'sendReceipt'      => array(
+    'value'        => '1',
+    'title'        => 'Отправлять фискальный чек по 54-ФЗ',
+    'description'  => '',
+    'control_type' => waHtmlControl::CHECKBOX,
+  ),
+  'debugMode'      => array(
+    'value'        => '0',
+    'title'        => 'Режим отладки плагина',
+    'description'  => 'В режиме отладки плагин выдаст в броузер дамп данных, необходимых для проверки его работы и исправления ошибок.',
+    'control_type' => waHtmlControl::CHECKBOX,
+  ),
 );
