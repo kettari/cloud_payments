@@ -11,6 +11,7 @@
  * @property string $taxationSystem
  * @property string $vat
  * @property boolean $sendReceipt
+ * @property string $widgetLanguage
  * @property boolean $debugMode
  */
 class cloud_paymentsPayment extends waPayment implements waIPayment
@@ -199,6 +200,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
 
     $hidden_fields['taxationSystem'] = $this->taxationSystem;
     $hidden_fields['sendReceipt'] = $this->sendReceipt ? 'yes' : 'no';
+    $hidden_fields['widgetLanguage'] = $this->widgetLanguage ? $this->widgetLanguage : 'ru-RU';
 
     if ($this->debugMode) {
       print('<h1>Debug info</h1>');

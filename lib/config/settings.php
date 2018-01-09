@@ -19,7 +19,7 @@ return array(
     'title'        => 'Public ID',
     'description'  => 'Идентификатор сайта, находится в ЛК CloudPayments.',
     'control_type' => waHtmlControl::INPUT,
-),
+  ),
   'apiSecret'      => array(
     'value'        => '',
     'title'        => 'API secret',
@@ -90,11 +90,55 @@ return array(
       ),
     ),
   ),
-  'sendReceipt'      => array(
+  'sendReceipt'    => array(
     'value'        => '1',
     'title'        => 'Отправлять фискальный чек по 54-ФЗ',
     'description'  => '',
     'control_type' => waHtmlControl::CHECKBOX,
+  ),
+  'widgetLanguage' => array(
+    'value'        => 'ru-RU',
+    'title'        => 'Локализация виджета',
+    'description'  => 'Укажите язык виджета. От выбора языка так же зависит часовой пояс, используемый для отметок времени.',
+    'control_type' => waHtmlControl::SELECT,
+    'options'      => array(
+      array(
+        'value' => 'ru-RU',
+        'title' => 'Русский (MSK)',
+      ),
+      array(
+        'value' => 'en-US',
+        'title' => 'Английский (CET)',
+      ),
+      array(
+        'value' => 'lv',
+        'title' => 'Латышский (CET)',
+      ),
+      array(
+        'value' => 'az',
+        'title' => 'Азербайджанский (AZT)',
+      ),
+      array(
+        'value' => 'kk',
+        'title' => 'Русский (ALMT)',
+      ),
+      array(
+        'value' => 'kk-KZ',
+        'title' => 'Казахский (ALMT)',
+      ),
+      array(
+        'value' => 'uk',
+        'title' => 'Украинский (EET)',
+      ),
+      array(
+        'value' => 'pl',
+        'title' => 'Польский (CET)',
+      ),
+      array(
+        'value' => 'pt',
+        'title' => 'Португальский (CET)',
+      ),
+    ),
   ),
   'debugMode'      => array(
     'value'        => '0',

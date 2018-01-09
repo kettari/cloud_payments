@@ -69,7 +69,14 @@
               console.log(charge);
             }*/
 
-            var widget = new cp.CloudPayments();
+            var widgetParams = {
+              language: "ru-RU"
+            };
+            if (typeof widgetLanguage !== 'undefined') {
+              widgetParams.language = widgetLanguage;
+            }
+
+            var widget = new cp.CloudPayments(widgetParams);
             widget.charge(charge,
                 successUrl,
                 failUrl
