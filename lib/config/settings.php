@@ -112,10 +112,16 @@ return array(
     'description'  => '',
     'control_type' => waHtmlControl::CHECKBOX,
   ),
+  'requireEmail'    => array(
+    'value'        => '0',
+    'title'        => 'Требовать email в виджете',
+    'description'  => '',
+    'control_type' => waHtmlControl::CHECKBOX,
+  ),
   'widgetLanguage' => array(
     'value'        => 'ru-RU',
     'title'        => 'Локализация виджета',
-    'description'  => 'Укажите язык виджета. От выбора языка так же зависит часовой пояс, используемый для отметок времени.',
+    'description'  => 'Укажите язык виджета. От выбора языка так же зависит часовой пояс, используемый для отметок времени. Подробнее см. <a href="https://cloudpayments.ru/Docs/Widget#language" target="_blank">Локализация</a> <i class="icon10 new-window"></i>',
     'control_type' => waHtmlControl::SELECT,
     'options'      => array(
       array(

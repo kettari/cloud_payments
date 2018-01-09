@@ -50,6 +50,8 @@
                     phone: phone
               };
             }
+            // Check if email is required
+            var emailRequired = (typeof requireEmail !== 'undefined') && (requireEmail === 'yes');
 
             // 'charge' parameter of the CloudPayments .charge() request
             var charge = {
@@ -60,7 +62,7 @@
                 invoiceId: invoiceId,
                 accountId: accountId,
                 email: email,
-                requireEmail: true,
+                requireEmail: emailRequired,
                 data: data
             };
 

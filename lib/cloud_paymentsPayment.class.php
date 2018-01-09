@@ -12,6 +12,7 @@
  * @property string $taxationSystem
  * @property string $vat
  * @property boolean $sendReceipt
+ * @property boolean $requireEmail
  * @property string $widgetLanguage
  * @property boolean $debugMode
  */
@@ -202,10 +203,12 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
 
     $hidden_fields['taxationSystem'] = $this->taxationSystem;
     $hidden_fields['sendReceipt'] = $this->sendReceipt ? 'yes' : 'no';
+    $hidden_fields['requireEmail'] = $this->requireEmail ? 'yes' : 'no';
     $hidden_fields['widgetLanguage'] = $this->widgetLanguage ? $this->widgetLanguage : 'ru-RU';
 
     if ($this->debugMode) {
-      print('<h1>Debug info</h1>');
+      print('<h1>Debug info for Webasyst plugin cloud_payments</h1>');
+      print(date('r'));
 
       print('<h2>Order data</h2>');
       print('<pre>');
