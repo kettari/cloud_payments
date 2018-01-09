@@ -120,7 +120,8 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       ->getName();
     $hidden_fields['email'] = $order->getContact()
       ->get('email', 'default');
-    $hidden_fields['accountId'] = $hidden_fields['email'];
+    $hidden_fields['accountId'] = 'contact_id_'.$order->getContact()
+        ->getId();
     $hidden_fields['phone'] = $order->getContact()
       ->get('phone', 'default');
     $hidden_fields['language'] = substr(
