@@ -26,6 +26,22 @@ return array(
     'description'  => 'Пароль для API, находится в ЛК CloudPayments.',
     'control_type' => waHtmlControl::INPUT,
   ),
+  'messageScheme' => array(
+    'value'        => 'sms',
+    'title'        => 'Схема проведения платежа',
+    'description'  => 'Одностадийная оплата выполняется сразу, двухстадийная требует подтверждения в личном кабинете мерчанта CloudPayments. Подробнее см. <a href="https://cloudpayments.ru/Docs/Integration#schemes" target="_blank">Схемы проведения платежа</a> <i class="icon10 new-window"></i>',
+    'control_type' => waHtmlControl::RADIOGROUP,
+    'options'      => array(
+      array(
+        'value' => 'sms',
+        'title' => 'Одностадийная',
+      ),
+      array(
+        'value' => 'dms',
+        'title' => 'Двухстадийная',
+      ),
+    ),
+  ),
   'taxationSystem' => array(
     'value'        => 0,
     'title'        => 'Система налогообложения',

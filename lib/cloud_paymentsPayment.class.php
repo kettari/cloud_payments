@@ -8,6 +8,7 @@
  * Plugin settings parameters must be specified in file lib/config/settings.php
  * @property string $publicId
  * @property string $apiSecret
+ * @property string $messageScheme
  * @property string $taxationSystem
  * @property string $vat
  * @property boolean $sendReceipt
@@ -94,6 +95,7 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
      */
     $hidden_fields = array();
     $hidden_fields['publicId'] = $this->publicId;
+    $hidden_fields['messageScheme'] = $this->messageScheme;
     $hidden_fields['invoiceId'] = sprintf(
       $this->template,
       $this->app_id,

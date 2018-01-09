@@ -69,18 +69,33 @@
               console.log(charge);
             }*/
 
+            // Define widget parameters
             var widgetParams = {
-              language: "ru-RU"
+                language: "ru-RU"
             };
             if (typeof widgetLanguage !== 'undefined') {
-              widgetParams.language = widgetLanguage;
+                widgetParams.language = widgetLanguage;
+            }
+            // Define message scheme
+            var scheme = 'sms';
+            if (typeof messageScheme !== 'undefined') {
+                scheme = messageScheme;
             }
 
             var widget = new cp.CloudPayments(widgetParams);
-            widget.charge(charge,
-                successUrl,
-                failUrl
-            );
+            if ('dms' === scheme) {
+                // Dual message scheme
+                widget.auth(charge,
+                    successUrl,
+                    failUrl
+                );
+            } else {
+                // Single message scheme
+                widget.charge(charge,
+                    successUrl,
+                    failUrl
+                );
+            }
         };
 
         // Assign handler
