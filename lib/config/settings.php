@@ -19,12 +19,28 @@ return array(
     'title'        => 'Public ID',
     'description'  => 'Идентификатор сайта, находится в ЛК CloudPayments.',
     'control_type' => waHtmlControl::INPUT,
-),
+  ),
   'apiSecret'      => array(
     'value'        => '',
     'title'        => 'API secret',
     'description'  => 'Пароль для API, находится в ЛК CloudPayments.',
     'control_type' => waHtmlControl::INPUT,
+  ),
+  'messageScheme' => array(
+    'value'        => 'sms',
+    'title'        => 'Схема проведения платежа',
+    'description'  => 'Одностадийная оплата выполняется сразу, двухстадийная требует подтверждения в личном кабинете мерчанта CloudPayments. Подробнее см. <a href="https://cloudpayments.ru/Docs/Integration#schemes" target="_blank">Схемы проведения платежа</a> <i class="icon10 new-window"></i>',
+    'control_type' => waHtmlControl::RADIOGROUP,
+    'options'      => array(
+      array(
+        'value' => 'sms',
+        'title' => 'Одностадийная',
+      ),
+      array(
+        'value' => 'dms',
+        'title' => 'Двухстадийная',
+      ),
+    ),
   ),
   'taxationSystem' => array(
     'value'        => 0,
@@ -89,5 +105,67 @@ return array(
         'title' => 'Расчетный НДС 10/110',
       ),
     ),
+  ),
+  'sendReceipt'    => array(
+    'value'        => '1',
+    'title'        => 'Отправлять фискальный чек по 54-ФЗ',
+    'description'  => '',
+    'control_type' => waHtmlControl::CHECKBOX,
+  ),
+  'requireEmail'    => array(
+    'value'        => '0',
+    'title'        => 'Требовать email в виджете',
+    'description'  => '',
+    'control_type' => waHtmlControl::CHECKBOX,
+  ),
+  'widgetLanguage' => array(
+    'value'        => 'ru-RU',
+    'title'        => 'Локализация виджета',
+    'description'  => 'Укажите язык виджета. От выбора языка так же зависит часовой пояс, используемый для отметок времени. Подробнее см. <a href="https://cloudpayments.ru/Docs/Widget#language" target="_blank">Локализация</a> <i class="icon10 new-window"></i>',
+    'control_type' => waHtmlControl::SELECT,
+    'options'      => array(
+      array(
+        'value' => 'ru-RU',
+        'title' => 'Русский (MSK)',
+      ),
+      array(
+        'value' => 'en-US',
+        'title' => 'Английский (CET)',
+      ),
+      array(
+        'value' => 'lv',
+        'title' => 'Латышский (CET)',
+      ),
+      array(
+        'value' => 'az',
+        'title' => 'Азербайджанский (AZT)',
+      ),
+      array(
+        'value' => 'kk',
+        'title' => 'Русский (ALMT)',
+      ),
+      array(
+        'value' => 'kk-KZ',
+        'title' => 'Казахский (ALMT)',
+      ),
+      array(
+        'value' => 'uk',
+        'title' => 'Украинский (EET)',
+      ),
+      array(
+        'value' => 'pl',
+        'title' => 'Польский (CET)',
+      ),
+      array(
+        'value' => 'pt',
+        'title' => 'Португальский (CET)',
+      ),
+    ),
+  ),
+  'debugMode'      => array(
+    'value'        => '0',
+    'title'        => 'Режим отладки плагина',
+    'description'  => 'В режиме отладки плагин выдаст в броузер дамп данных, необходимых для проверки его работы и исправления ошибок.',
+    'control_type' => waHtmlControl::CHECKBOX,
   ),
 );

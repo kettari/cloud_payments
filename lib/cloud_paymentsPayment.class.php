@@ -8,8 +8,13 @@
  * Plugin settings parameters must be specified in file lib/config/settings.php
  * @property string $publicId
  * @property string $apiSecret
+ * @property string $messageScheme
  * @property string $taxationSystem
  * @property string $vat
+ * @property boolean $sendReceipt
+ * @property boolean $requireEmail
+ * @property string $widgetLanguage
+ * @property boolean $debugMode
  */
 class cloud_paymentsPayment extends waPayment implements waIPayment
 {
@@ -84,12 +89,14 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
 
     // Change comma to dot. Some merchants reported issue with it
     $total = (float)str_replace(',', '.', $order->total);
+    $shipping = (float)str_replace(',', '.', $order->shipping);
 
     /**
      * Fields required to be sent to CloudPayments
      */
     $hidden_fields = array();
     $hidden_fields['publicId'] = $this->publicId;
+    $hidden_fields['messageScheme'] = $this->messageScheme;
     $hidden_fields['invoiceId'] = sprintf(
       $this->template,
       $this->app_id,
@@ -113,7 +120,8 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       ->getName();
     $hidden_fields['email'] = $order->getContact()
       ->get('email', 'default');
-    $hidden_fields['accountId'] = $hidden_fields['email'];
+    $hidden_fields['accountId'] = 'contact_id_'.$order->getContact()
+        ->getId();
     $hidden_fields['phone'] = $order->getContact()
       ->get('phone', 'default');
     $hidden_fields['language'] = substr(
@@ -177,10 +185,44 @@ class cloud_paymentsPayment extends waPayment implements waIPayment
       $cp_item['ean13'] = ifset($single_item['sku']);
       $hidden_fields['items'][] = $cp_item;
     }
-    $hidden_fields['taxationSystem'] = $this->taxationSystem;
 
-    /*print_r($hidden_fields);
-    die;*/
+    // Shipping
+    if ($shipping > 0) {
+      $cp_item['label'] = $order_data->shipping_name;
+      $cp_item['price'] = number_format(
+        $shipping,
+        2,
+        '.',
+        ''
+      );
+      $cp_item['quantity'] = 1;
+      $cp_item['amount'] = $cp_item['price'];
+      $cp_item['vat'] = $vat;
+      $cp_item['ean13'] = '';
+      $hidden_fields['items'][] = $cp_item;
+    }
+
+    $hidden_fields['taxationSystem'] = $this->taxationSystem;
+    $hidden_fields['sendReceipt'] = $this->sendReceipt ? 'yes' : 'no';
+    $hidden_fields['requireEmail'] = $this->requireEmail ? 'yes' : 'no';
+    $hidden_fields['widgetLanguage'] = $this->widgetLanguage ? $this->widgetLanguage : 'ru-RU';
+
+    if ($this->debugMode) {
+      print('<h1>Debug info for Webasyst plugin cloud_payments</h1>');
+      print(date('r'));
+
+      print('<h2>Order data</h2>');
+      print('<pre>');
+      print_r($order_data);
+      print('</pre>');
+
+      print('<h2>CloudPayments form data</h2>');
+      print('<pre>');
+      print_r($hidden_fields);
+      print('</pre>');
+
+      die;
+    }
 
     /**
      * $transaction_data['order_id'] is mandatory field,
