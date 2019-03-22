@@ -1,7 +1,7 @@
 # Плагин CloudPayments
 Плагин платёжной системы CloudPayments для [Вебасист](https://www.webasyst.com/) и магазина Shop Script.
 
-Домашняя страница: https://github.com/kettari/cloud_payments
+**ВНИМАНИЕ:** С марта 2019 года поддержкой плагина занимается компания CloudPayments. Пожалуйста, обращайтесь в [их службу поддержки](https://support.cloudpayments.ru/).
 
 ## Описание
 
